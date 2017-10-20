@@ -1,0 +1,37 @@
+---
+title: ""
+runtime: shiny
+output: html_document
+---
+
+```{r, fig.width=2, fig.height=5, echo = FALSE, message=FALSE, warning=FALSE}
+library(labestData)
+library(shiny)
+
+da <- data.frame(y = PaulaEx1.13.19$renda,
+                 x = PaulaEx1.13.19$estud)
+
+bootstrapPage(div(style="display:inline-block",
+                  sliderInput("bins", "Ponto de Corte", min = min(da$x),
+                              max = max(da$x), value = 50,
+                              step = 0.5)))
+
+output$chart <- renderPlot({
+  da$v <- with(da,
+               ifelse(x <= input$bins, 0, x - input$bins))
+  m0 <- lm(y ~ x + v, da)
+
+  da$pred <- predict(m0)
+  aic1 <- AIC(m0)
+  #-----------
+  plot(y ~ x, data = da, pch = 16, main = paste0("AIC = ", 
+                                                  round(aic1, 3)))
+  da <- da[order(da$x),]
+  with(subset(da, x < input$bins), lines(x, pred, col = "2", lwd = 2))
+  with(subset(da, x >= input$bins), lines(x, pred, col = "2", lwd = 2))
+  
+})
+plotOutput("chart")
+
+```
+

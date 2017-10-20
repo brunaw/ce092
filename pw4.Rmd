@@ -1,0 +1,422 @@
+---
+title: "Piecewise Regression"
+author: "Bruna Wundervald"
+output:
+  rmarkdown::html_vignette:
+    fig_width: 5
+    fig_height: 3.5
+    fig_cap: TRUE
+    toc: yes
+---
+<style type="text/css">
+#TOC {
+  margin: 0 130px;
+  width: 425px;
+}
+</style>
+
+```{r setup, include = FALSE}
+require(knitr)
+opts_chunk$set(
+    dpi = 100,
+    fig.align = "center",
+    comment = NA,
+    message = FALSE,
+    warning = FALSE,
+    error = FALSE)
+```
+
+## Introduction
+
+  - When analyzing the relationship between a response variable $Y$, 
+  and some explanatory variables $\boldsymbol{X}$, it may happen that, 
+  for different ranges of $\boldsymbol{X}$, the linear behaviour
+  between the variables differs. In this situation, the use of more 
+  than one linear model to describe the observed relationship might
+  be interesting. In other words, it might be the case where the 
+  application of *Piecewise Regression* is appropiate, because it 
+  allows multiple linear models being fit fot the data, for 
+  varying ranges of the explanatory variables. 
+  
+### How do we find the *breakpoint*?
+  - Breakpoints are fundamental when using Piecewise Regression, 
+  because they are points in the range of $X$ where the behaviour of
+  $Y$ changes, then the name *"breakpoint"*. In some cases, the 
+  breakpoint can be known, but normally it isn't. When this happens, 
+  we must have a way to estimate its value.
+  - Breakpoint estimation
+
+
+### Different Breakpoints
+
+```{r}
+library(segmented)
+library(shiny)
+library(lattice)
+library(latticeExtra)
+
+da <- read.csv("df02.txt", 
+               sep = "\t")
+
+str(da)
+
+print(xyplot(Y1 ~ x, data = da,
+       type = c("p", "g", "smooth"), pch = 16,
+             strip = strip.custom(bg = "white"),
+       col = "tomato",
+       xlab = "", ylab = ""),
+     position = c(0,0, 0.5, 1), more = TRUE)
+
+print(xyplot(Y2 ~ x, data = da,
+             type = c("p", "g", "smooth"), pch = 16,
+             strip = strip.custom(bg = "white"),
+             col = "aquamarine",
+             xlab = "", ylab = ""),
+      position = c(0.5,0, 1, 1), more = TRUE)
+```
+_______________________________________________________________________
+
+```{r, echo = FALSE, fig.width= 10, eval = FALSE}
+#-------------------------------
+bootstrapPage(div(style="display:inline-block",
+                  sliderInput("bins", "Breakpoint 1", min = min(da$x),
+                              max = max(da$x), value = 1,
+                              step = 0.05)),
+              div(style="display:inline-block",
+                  sliderInput("bins2", "Breakpoint 2", min = min(da$x),
+                              max = max(da$x), value = 1,
+                              step = 0.05)))
+
+output$chart <- renderPlot({
+  da$v <- with(da,
+               ifelse(x <= input$bins, 0, x - input$bins))
+  da$p <- with(da,
+               ifelse(x <= input$bins2, 0, x - input$bins2))
+  m0 <- lm(Y1 ~ x + v, da)
+  m1 <- lm(Y2 ~ x + p, da)
+  
+  da$pred <- predict(m0)
+  da$pred2 <- predict(m1)
+  aic1 <- AIC(m0)
+  aic2 <- AIC(m1)
+  #-----------
+  par(mfrow = c(1, 2))
+  plot(Y1 ~ x, data = da, pch = 16, main = paste0("AIC = ", 
+                                                  round(aic1, 3)))
+  da <- da[order(da$x),]
+  with(subset(da, x < input$bins), lines(x, pred, col = "2", lwd = 2))
+  with(subset(da, x >= input$bins), lines(x, pred, col = "2", lwd = 2))
+  
+  plot(Y2 ~ x, data = da, pch = 16, main = paste0("AIC = ", 
+                                                  round(aic2, 3)))
+  da <- da[order(da$x),]
+  with(subset(da, x < input$bins2), lines(x, pred2, col = "2", 
+                                           lwd = 2))
+  with(subset(da, x >= input$bins2), lines(x, pred2, col = "2",
+                                            lwd = 2))
+})
+plotOutput("chart")
+```
+
+<iframe src="https://brunaw.shinyapps.io/seg_shiny/" width=100% height =600 frameborder="0" scrolling="no" marginheight="0" marginwidth="0"> </iframe>
+
+
+### Estimating the Breakpoint
+  - For the estimation of the best breakpoint, we'll test every value
+  between a certain interval and look to the *LogLikelihood* of each 
+  adjusted model. The breakpoint that gives the bigger value for the
+  LogLikelihood can be considered "the best one":
+```{r}
+#------------------
+g <- numeric(length = 20)
+
+ll <- for (i in 1:20) {
+  m <- i/10
+  da$v <- with(da, ifelse(x <= m, 0, x - m))
+  m1 <- lm(Y1 ~ x + v, data = da)
+  g[i] <- AIC(m1)
+}
+which.min(g) # 1.9
+#-----------------
+# Using the segmented package
+s <-lm(Y1 ~ x, data = da)
+o <- segmented(s, seg.Z=~x)
+
+summary(o)
+#----------------
+# Second Dataset
+#---------------
+g <- numeric(length = 20)
+
+ll <- for (i in 1:20) {
+  m <- i/10
+  da$v <- with(da, ifelse(x <= m, 0, x - m))
+  m1 <- lm(Y2 ~ x + v, data = da)
+  g[i] <- AIC(m1)
+}
+which.min(g) # 1.5
+#-----------------
+# Using the segmented package
+s <-lm(Y2 ~ x, data = da)
+o <- segmented(s, seg.Z=~x)
+o$psi[2]
+```
+
+
+## Model Expression
+
+  - When we have only one breakpoint, the model can be represented by:
+
+$$ \begin{align}
+y = \beta_{0} + \beta_{1} x , & \quad x \leq c \\
+y = \beta_{0} + \beta_{2} x + \theta (\beta_{1}-\beta_{2}), & \quad x > c
+\end{align} $$
+
+## Types of Segments
+  - We can also vary the behaviour of the line segments. Above, there is
+  some examples of different situations:
+  
+### Different inclinations
+
+$$ \begin{align}
+y = \beta_{0} + \beta_{1} x , & \quad x \leq c \\
+y = \beta_{0} + \beta_{2} x , & \quad x > c
+\end{align} $$
+
+```{r}
+m <- lm(Y1 ~ x, data = da)
+da$pred <- predict(m)
+
+#----------------------
+plot(Y1 ~ x, data = da)
+da <- da[order(da$Y1),]
+with(subset(da, x < 1), lines(x, pred, col = "2"))
+da$sec <- m$coefficients[2] + 8 * da$x
+with(subset(da, x >= 1), lines(x, sec, col = "2"))
+#-----------------------
+```
+
+### Different intercepts
+
+$$ \begin{align}
+y = \beta_{0} + \beta_{1} x , & \quad x \leq c \\
+y = \beta_{2} + \beta_{1} x , & \quad x > c
+\end{align} $$
+
+```{r}
+plot(Y1 ~ x, data = da)
+da <- da[order(da$x),]
+with(subset(da, x < 1), lines(x, pred, col = "2"))
+da$sec <- 1 + m$coefficients[2] * da$x
+with(subset(da, x >= 1), lines(x, sec, col = "2"))
+``` 
+
+### Different intercepts and no inclination 
+
+$$ \begin{align}
+y = \beta_{0}, & \quad x \leq c \\
+y = \beta_{1}, & \quad x > c
+\end{align} $$
+
+```{r}
+plot(Y1 ~ x, data = da)
+da <- da[order(da$x),]
+da$c <- rep(15, nrow(da))
+da$b <- rep(25, nrow(da))
+with(subset(da, x < 1), lines(x, c, col = "2"))
+with(subset(da, x >= 1), lines(x, b, col = "2"))
+```
+
+
+------------------------------------------------------------------------
+
+## Model Comparison
+  1) Linear Regression
+  2) Transformed Response Variable
+  3) Piecewise Regression
+  4) Polinomial Regression
+  5) Non-Linear Regression
+  6) Generalized Linear Regression
+  
+```{r, fig.height=7, fig.width=7}
+m1 <- lm(Y1 ~ x, data = da)
+m2 <- lm(log(Y1) ~ x, data = da)
+
+da$v <- with(da, ifelse(x <= 1.9, 0, x - 1.9))
+m3 <- lm(Y1 ~ x + v, data = da)
+m4 <- lm(Y1  ~ poly(x, 2), data = da)
+
+m6 <- glm(Y1 ~ x, family = "Gamma"(link = "inverse"),
+          data = da)
+
+#------------------------
+pred <- data.frame(m1 = predict(m1), m2 = exp(predict(m2)),
+                   m3 = predict(m3), m4 = predict(m4),
+                   m6 = predict(m6, type = "response"))
+pred$x <- da$x
+pred <- pred[order(pred$x),]
+
+
+xyplot(Y1 ~ x,
+       pch = 16,
+       jitter.x = TRUE,
+       type = c("p", "g"),
+       xlab = expression(x[1]),
+       ylab = list(label = "y",
+                   rot = 0),
+       scales = list(y = list(tick.number = 8)),
+       da, col = 1,
+       key = list(space = "bottom",
+                  cex.title = 1.15,
+                  text = list(c(
+                    paste0("Linear Regression - aic = ", 
+                           round(AIC(m1), 3)),
+                    paste0("Transformed Response Variable - aic = ", 
+                           round(AIC(m2), 3)),
+                    paste0("Piecewise Regression - aic = ", 
+                           round(AIC(m3), 3)),
+                    paste0("Polinomial Regression - aic = ", 
+                           round(AIC(m4), 3)),
+                    paste0("Generalized Linear Regression - aic = ",
+                           round(AIC(m6), 3)))),
+                  lines =
+                    list(col = c("yellow",
+                                 "springgreen", "steelblue",
+                                 "violetred", "tomato"),
+                               lwd = 3))
+       )+
+  as.layer(xyplot(m1 + m2 + m3 + m4 + m6  ~ x ,
+                  data = pred, type = "l",
+                  auto.key = TRUE,
+                  col = c("yellow", "springgreen", "steelblue",
+                          "violetred", "tomato"),
+                  lwd = 2))
+
+#-------------------------------------------------------------
+# Outlier Exclusion - for convergence of the Non-Linear Model
+#------------------------------------------------------------
+
+m1 <- lm(Y1 ~ x, data = da[-21,])
+m2 <- lm(log(Y1) ~ x, data = da[-21,])
+
+da$v <- with(da, ifelse(x <= 0.7, 0, x - 0.7))
+m3 <- lm(Y1 ~ x + v, data = da[-21,])
+m4 <- lm(Y1  ~ poly(x, 2), data = da[-21,])
+
+# Incomplete Gamma Model
+m5 <- nls(Y1 ~ (a*(x^b))*exp(-c*x), 
+          start = c(a = 10, b = 0.01, c = -0.9),
+          data = da[-21,])
+
+m6 <- glm(Y1 ~ x, family = "Gamma"(link = "inverse"),
+          data = da[-21,])
+
+#------------------------
+pred <- data.frame(m1 = predict(m1), m2 = exp(predict(m2)),
+                   m3 = predict(m3), m4 = predict(m4),
+                   m5 = predict(m5), 
+                   m6 = predict(m6, type = "response"))
+pred$x <- da[-21,]$x
+pred <- pred[order(pred$x),]
+
+
+xyplot(Y1 ~ x,
+       pch = 16,
+       jitter.x = TRUE,
+       type = c("p", "g"),
+       xlab = expression(x[1]),
+       ylab = list(label = "y",
+                   rot = 0),
+       scales = list(y = list(tick.number = 8)),
+       da, col = 1,
+       key = list(space = "bottom",
+                  cex.title = 1.15,
+                  text = list(c(
+                    paste0("Linear Regression - aic = ", 
+                           round(AIC(m1), 3)),
+                    paste0("Transformed Response Variable - aic = ", 
+                           round(AIC(m2), 3)),
+                    paste0("Piecewise Regression - aic = ", 
+                           round(AIC(m3), 3)),
+                    paste0("Polinomial Regression - aic = ", 
+                           round(AIC(m4), 3)),
+                    paste0("Non-Linear Regression - aic = ", 
+                           round(AIC(m5), 3)),
+                    paste0("Generalized Linear Regression - aic = ",
+                           round(AIC(m6), 3)))),
+                  lines =
+                    list(col = c("yellow", "turquoise",
+                                 "springgreen", "steelblue",
+                                 "violetred", "tomato"),
+                               lwd = 3))
+       )+
+  as.layer(xyplot(m1 + m2 + m3 + m4 + m5 + m6  ~ x ,
+                  data = pred, type = "l",
+                  auto.key = TRUE,
+                  col = c("yellow", "turquoise", 
+                          "springgreen", "steelblue",
+                          "violetred", "tomato"),
+                  lwd = 2))
+
+```
+
+**The AIC of the transformed response variable model is not comparable
+to others as it is.**
+
+
+## Using more than one breakpoint
+
+  - When we have two breakpoints, for example, the model can be
+  represented by:
+
+$$ \begin{align}
+y = \beta_{0} + \beta_{1} x_{1} + \beta_{2} x_{2} + \beta_{3} x_{3},
+\\
+\\
+x_{2}=\left\{
+  \begin{array}{ll}
+    x_{1}-c_{1}, \quad c_{1} \leq x\\
+    0, cc. \\
+    \end{array}
+\right.
+\\
+x_{3}=\left\{
+    \begin{array}{ll}
+    x_{1}-c_{2}, \quad c_{2} \leq x\\
+    0, cc. \\
+    \end{array}
+\right.
+\end{align} $$
+
+
+
+```{r}
+#----------------------------------------------------------------
+da$x2 <- with(da, ifelse(x < 0.5, 0, x-0.5))
+da$x3 <- with(da, ifelse(x < 0.5 | x >= 1.3, 0, x-1.3))
+da$x4 <- with(da, ifelse(x >= 1.3, 0, x-1.3))
+
+m1 <- lm(Y1 ~ x + x2 + x3, data = da) # With interval 
+m2 <- lm(Y1 ~ x + x2 + x4, data = da) # Without interval 
+logLik(m1); logLik(m2)
+
+
+plot(Y1 ~ x, data = da, 
+     main = paste0("Model with the interval - loglik = ", 
+                   round(logLik(m1), 4)))
+da$pred1 <- predict(m1)
+with(subset(da, x < 0.5), lines(x, pred1, col = "2", lwd = 2))
+with(subset(da,  0.5 > x | x <= 1.3), 
+     lines(x, pred1, col = "2", lwd = 2))
+with(subset(da, x >= 1.3), lines(x, pred1, col = "2", lwd = 2))
+
+plot(Y1 ~ x, data = da, main = 
+       paste0("Model without the interval - loglik = ", 
+              round(logLik(m2), 3)))
+da$pred2 <- predict(m2)
+with(subset(da, x < 0.5), lines(x, pred2, col = "2", lwd = 2))
+with(subset(da,  0.5 > x | x <= 1.3), 
+     lines(x, pred2, col = "2", lwd = 2))
+with(subset(da, x >= 1.3), lines(x, pred2, col = "2", lwd = 2))
+```
+ 

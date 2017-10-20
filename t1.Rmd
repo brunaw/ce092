@@ -1,0 +1,554 @@
+---
+title: "Trabalho 1 - Extensões de Modelos de Regressão - CE092 - 2017/2"
+subtitle: "Professor Paulo Justiniano Ribeiro Jr. "
+author: "Bruna Wundervald"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    fig_width: 5
+    fig_height: 3.5
+    fig_cap: TRUE
+    toc: yes
+header-includes:
+  - \usepackage{amsmath}
+---
+
+<style type="text/css">
+#TOC {
+  margin: 0 130px;
+  width: 425px;
+}
+</style>
+
+
+```{r setup, include = FALSE}
+library(knitr)
+opts_chunk$set(
+    cache = TRUE,
+    dpi = 100,
+    fig.align = "center",
+    fig.height = 5, 
+    fig.width = 5, 
+    comment = NA,
+    message = FALSE,
+    warning = FALSE,
+    error = FALSE)
+```
+_______________________________________________________________________
+
+## Introdução 
+
+  - Problemas que envolvem modelagem são aqueles nos quais temos 
+  interesse em estimar a relação entre uma ou mais variáveis *resposta*,
+  denotadas por $y$ e uma ou mais variáveis explicativas $x$. Neste 
+  trabalho, exploraremos um banco de dados e tentaremos encontrar
+  uma boa forma de explicar esta relação. 
+  
+  - O banco de dados é um subconjunto dos dados `PaulaEx1.13.19`, do 
+  pacote `labestData`. Dizemos subconjunto pois só vamos utilizar duas 
+  variáveis: renda e estudo. O banco de dados original contém 10 
+  variáveis. 
+  
+  - As primeiras observações dos dados são:
+
+```{r, echo = FALSE, results='asis'}
+library(labestData)
+
+da <- data.frame(y = PaulaEx1.13.19$renda,
+                 x = PaulaEx1.13.19$estud)
+knitr::kable(head(da, 10))
+```
+  
+    - Abaixo, temos um gráfico de dispersão entre as variáveis Y e X: 
+```{r, fig.cap = "Figura 1: Gráfico de dispersão dos dados: estudo da relação entre X e Y"}
+library(lattice)
+library(latticeExtra)
+
+
+xyplot(y ~ x, data = da, type = c("p", "g"),
+       col = "turquoise", 
+       ylab = "Y - Renda",
+       xlab = "X - Tempo de estudo",
+       pch = 16)
+```
+
+
+## Regressão Linear Simples
+  - Em um modelo de regressão linear simples, temos que a variável
+  resposta $y$ é explicada em função de uma covariável, $x$, com uma
+  equação que descreve uma reta, por isso o nome *regressão linear
+  simples*. O formato desta equação é do tipo:
+  $$ y_i = \beta_0 + \beta_1 x_i + \epsilon_i,$$
+  
+  Onde $\beta_0$ pode ser interpretado como o intercepto da equação e 
+  $\beta_1$ como o quanto muda $y$ quando o valor de $x$ é alterado em
+  uma unidade. O $\epsilon_i$ representa os valores dos resíduos, isto 
+  é, tudo aquilo que não é explicado pela parte determinística da 
+  equação. Temos que $\epsilon_i \sim N(0, \sigma^2)$. 
+
+  - Alguns detalhes deste modelo são: assume-se distribuição Normal 
+  para a variável resposta $y$, com homocedasticidade, ou seja, 
+  variância constante para todo $y_i$; e assume-se linearidade entre
+  as variáveis $x$ e $y$. 
+  
+  - Assim sendo, está será a primeira abordagem deste trabalho. A seguir,
+  temos o código em `R` que realiza este procedimento: 
+
+```{r, fig.cap = "Figura 2: Reta de regressão linear simples sobreposta aos dados"}
+aic <- c()
+m0 <- lm(y ~ x, data = da)
+summary(m0)
+(aic[1] <- AIC(m0))
+
+xyplot(y ~ x, data = da, type = c("p", "g"),
+       col = "turquoise", 
+       ylab = "Y - Renda",
+       xlab = "X - Tempo de estudo",
+       pch = 16,
+       main = paste0("Regressão linear simples - AIC = ", 
+                     round(aic[1], 3)),
+       panel = function(x, y, ...) {
+    panel.xyplot(x, y, ...)
+    panel.abline(lm(y~x), col = 2, lwd = 3)
+  })
+```
+
+Os resultados acima mostram que teríamos uma reta na qual: 
+  $$ y_i = `r round(m0$coef[1], 3)` + `r round(m0$coef[2], 3)` x_i + \epsilon_i,$$
+  Cuja demonstração está no gráfico anterior. 
+
+## Regressão Por Partes
+
+  - Outra abordagem possível é a utilização de Regressão Segmentada. 
+  A ideia desta técnica é "separar" $x$ em dois ou mais subconjuntos
+  e ajustar diferentes retas de regressão linear com os dados presentes
+  neles. Um exemplo de formato para esta regressão pode ser:
+  $$ y_i = \beta_0 + \beta_1 x_i + \beta_2 (x_i - c) I(x_i > c) + \epsilon_i,$$
+  
+  - Esta representação significa que:
+
+$$ \begin{align}
+y_i = \beta_{0} + \beta_{1} x_i , & \quad x \leq c \\
+y_i = \beta_{0} + \beta_{1} x_i + \beta_{2} (x_i - c), & \quad
+x > c
+\end{align} $$
+
+Onde $c$ é o valor do "ponto de corte", ou seja, é o ponto aonde a 
+equação de estimação é alterada. 
+
+  - Os pressupostos do modelo de regressão linear simples, comentados
+  anteriormente, são extendidos para este caso.   
+
+  - Para utilizar regressão segmentada, é essencial que o valor de $c$
+  seja satisfatório, isto é, que traga bom resultados. Encontrar esse
+  valor pode ser uma tarefa "visual", ou seja, utiliza-se de "chutes" 
+  para $c$ baseados nas características da relação entre $x$ e $y$ em 
+  um gráfico; ou pode ser feita com uma técnica mais sofisticada, com a
+  estimação de $c$ através da procura  por um valor para ele que 
+  minimize a soma dos quadrados dos resíduos do modelo. 
+  
+  - O código abaixo mostra um algoritmo simples para a estimação de 
+  $c$: 
+```{r}
+#-------- Encontrando pontos de corte
+g <- c()
+
+c.est <- for (i in 1:20) {
+  da$v <- with(da, ifelse(x <= (40+i), 0, x - (40+i)))
+  m1 <- lm(y ~ x + v, data = da)
+  g[i] <- AIC(m1)
+}
+which.min(g) # Corresponde a 40 + 10 = 50
+```
+
+  - Encontramos que um possível ponto de corte bom estaria localizado em
+  $x = 50$. Mesmo assim, podemos testar diferentes pontos de corte, como 
+  o 53. Abaixo, temos a representação destes métodos:
+
+```{r, fig.cap = "Figura 3: Modelo de regressão segmentada com ponto de corte em 53"}
+da$v <- with(da, ifelse(x <= 53, 0, x - 53))
+m1 <- lm(y ~ x + v, data = da)
+(aic[2] <- AIC(m1))
+
+da$p <- with(da, ifelse(x <= 50, 0, x - 50))
+m2 <- lm(y ~ x + p, data = da)
+(aic[3] <- AIC(m2))
+#--------------
+
+xyplot(y ~ x, data = da, type = c("p", "g"),
+       col = "turquoise", 
+       ylab = "Y - Renda",
+       xlab = "X - Tempo de estudo",
+       pch = 16,
+       main = paste0("Regressão Segmentada - AIC = ", 
+                     round(aic[2], 3), " - \nPonto de corte em 53"),
+       panel = function(x, y, ...){
+         panel.xyplot(x, y, ...)
+         le <- lm(y ~ x, da,
+                  subset = x <= 53)
+         llines(da$x[da$x <= 53],
+                predict(le), col = 2, lwd = 3)
+         ld <- lm(y ~ x + v, da,
+                  subset = x > 53)
+         llines(da$x[da$x > 53],
+          predict(ld), col = 3, lwd = 3)
+})
+```
+
+```{r, fig.cap = "Figura 4: Modelo de regressão segmentada com ponto de corte em 50"}
+xyplot(y ~ x, data = da, type = c("p", "g"),
+       col = "turquoise", 
+       ylab = "Y - Renda",
+       xlab = "X - Tempo de estudo",
+       pch = 16,
+       main = paste0("Regressão Segmentada - AIC = ", 
+                     round(aic[3], 3), " - \n Ponto de corte em 50"),
+       panel = function(x, y, ...){
+         panel.xyplot(x, y, ...)
+         le <- lm(y ~ x, da,
+                  subset = x <= 50)
+         llines(da$x[da$x <= 50],
+                predict(le), col = 2, lwd = 3)
+         ld <- lm(y ~ x + p, da,
+                  subset = x > 50)
+         llines(da$x[da$x > 50],
+          predict(ld), col = 3, lwd = 3)
+})
+```
+
+  - Observa-se que ambos os AIC dos modelos segmentados são melhores
+  (ou seja, têm valor menor) que os do modelo de regressão linear simples.
+  Com isso, notamos que, apesar desta abordagem ser simples, já é 
+  melhor do que a anterior. 
+  
+## Suavização por Splines
+
+  - Quando utilizamos *splines*, significa que estamos fazendo 
+  regressões polinomiais por partes, com as restrições de que 
+  as funções devem ser contínuas no ponto em $f(x)$, $f'(x)$
+  e $f''(x)$. Com isso, garantimos a suavidade, já que a derivada
+  segunda de uma função indica para onde sua inclinação está indo,
+  sendo uma medida de rugosidade da função. 
+
+  - Uma suavização por *splines* é a minimização de uma função no 
+  formato: 
+  $$\sum(y_i - f(x_i))^2 + \lambda \int f''(x)^2dx,$$
+  Onde $\lambda$ é um parâmetro de *tuning*, que determina a suavidade, 
+  e a função $f$ que **minimiza** a expressão é um *spline* 
+  suavizador. Esta equação pode ser vista como:
+  <center>
+  $\overbrace{{\sum(y_i - f(x_i))^2}}^{Perda}$ +  $\overbrace{{\lambda \int f''(x)^2dx}}^{Penalidade}$
+  </center>
+  
+  Isto porque o primeiro termo, de perda, estimula $f$ a se ajustar 
+  aos dados, enquanto o termo de penalidade justamente penaliza a
+  variabilidade em $f$. 
+  
+  - Quando $\lambda = 0$, temos uma função que interpola perfeitamente
+  os dados, ou seja, que tem rugosidade máxima, sem suavização. Da mesma
+  forma, se $\lambda \rightarrow \infty$, temos o máximo de suavidade, 
+  que é o equivalente a uma reta. Em valores intermediários para 
+  $\lambda$, $f$ irá aproximar os dados e teremos uma suavização. 
+  
+  - Uma das principais maneiras de se encontrar o $\lambda$ ótimo
+  para a suavização é através de Validação Cruzada. Neste método, 
+  são testados diversos valores para $\lambda$ em $n-1$ observações, 
+  e a observação que sobra é utilizada para o cálculo do erro. Assim, 
+  o $\lambda$ que produzir o menor erro na "amostra de treino" pode
+  ser tomado como um bom valor. 
+  
+  - Mesmo assim, outra técnica possível é a especificação dos graus de
+  liberdade efetivos para cada suavização. O usuário pode então apenas
+  dizer quais são os graus de liberdade desejados, e o software realiza a
+  suavização. Esta é a técnica usada neste trabalho, exemplificada 
+  a seguir: 
+  
+```{r fig.width = 11, fig.height = 4, out.extra = 'style = "margin:0 -200px"', fig.cap = "Figura 5: Suavização por Splines com variação dos graus de liberdade"}
+p1 <- xyplot(y ~ x, data = da, type = c("p", "g"),
+             col = "turquoise",
+             ylab = "Y - Renda",
+             xlab = "",
+             pch = 16,
+             main = "15 Graus de Liberdade")+
+  layer(panel.lines(smooth.spline(da$x, da$y, df = 15),
+                    lwd = 2,
+                    col = 2))
+
+p2 <- xyplot(y ~ x, data = da, type = c("p", "g"),
+             col = "turquoise", 
+             xlab = "X - Tempo de estudo",
+             ylab = "",
+             pch = 16,
+             main = "10 Graus de Liberdade")+
+  layer(panel.lines(smooth.spline(da$x, da$y, df = 10),
+                    lwd = 2,
+                    col = 3))
+
+p3 <- xyplot(y ~ x, data = da, type = c("p", "g"),
+       col = "turquoise", 
+       pch = 16,
+       ylab = "",
+       xlab = "",
+       main = "5 Graus de Liberdade")+
+  layer(panel.lines(smooth.spline(da$x, da$y, df = 5),
+                    lwd = 2,
+                    col = 2))
+
+print(p1, position = c(0, 0, 1/3, 1), more = TRUE)
+print(p2, position = c(1/3, 0, 2/3, 1), more = TRUE)
+print(p3, position = c(2/3, 0, 1, 1))
+```
+  
+  - Podemos notar que para os dados considerados, com 15 graus de
+  liberdade efetivos não temos uma boa suavização, com muita rugosidade. 
+  Em 10 graus de liberdade temos uma melhora, mas parece que, visualmente,
+  5 graus são suficientes para a obtenção de uma boa suavização. 
+  
+
+## Suavização por Kernel
+
+  - Em sua forma mais simples, é feita uma estimação por média móvel. No
+  geral, a estimativa de $f$, ou seja, $\hat{f}_{\lambda} (x)$ é dada
+  por: 
+  
+$$ \hat{f}_{\lambda} (x) =
+   \frac{1}{n \lambda} \sum_{j = 1}^{n} k \left( \frac{x - x_{j}}{\lambda} \right) Y_{j} =
+   \frac{1}{n} \sum_{j = 1}^{n} w_{j} Y_{j}$$
+   
+   Onde $w_{j} = k \left( \frac{x - x_{j}}{\lambda} \right) / \lambda$,
+   e $K$ representa o Kernel, com:
+  $$\int K(u)d(u) = 1.$$
+
+  - Assim como na suavização por *splines*, o $\lambda$ da expressão é
+  um controlador da suavização, e pode ser chamado de largura de banda. 
+  Este novo se dá devido ao fato dele controlar qual será o "tamanho
+  da janela" considerado em cada passo. Ele também pode ser otimizado
+  com Validação Cruzada, em procedimento análogo ao citado anteriormente.
+  
+  - No caso de dados muito espaçados, uma alternativa que ajuda neste
+  problema é o uso de um  estimador que modifica o estimador de 
+  média móvel, isto é, tem-se uma média ponderada, onde os pesos
+  para cada $y$ devem somar 1. Este estimador é o de *Nadaraya-Watson*, 
+  dado por: 
+$$ f_{\lambda} (x) = \frac{\sum_{j = 1}^{n} w_{j} Y_{j}}{\sum_{j = 1}^{n} w_{j}} $$
+
+  - O uso deste estimador requer dois passos anteriores: a escolha do 
+  *Kernel* e do $\lambda$. Um *Kernel* ótimo, muito utilizado no lugar
+  do Gaussiano, é o de Epanechnikov, que é compacto, suave e rápido
+  computacionalmente. Sua equação é:
+$$ k(x) = \begin{cases}
+             \frac{3}{4} (1 - x^{2}) & |x| < 1 \\
+             0 & \text{caso contrário}
+            \end{cases}$$
+            
+    - Apesar disso, não considera-se como crucial a escolha do *Kernel*,
+    porque diferentes escolhas podem dar suavizações satisfatórias. O 
+    importante mesmo, neste caso, é a especificação de $\lambda$. Se ele
+    for pequeno demais, tem-se muita rugosidade, e se for um valor 
+    muito alto, a suavização será extrema, o que não é desejado. 
+    
+```{r fig.width = 11, fig.height = 4, out.extra = 'style = "margin:0 -200px"', fig.cap = "Figura 6: Suavização por Kernel com variação do parâmetro de suavização"}
+p1 <- xyplot(y ~ x, data = da, type = c("p", "g"),
+             col = "turquoise",
+             xlab = "",
+             ylab = "Y - Renda",
+             pch = 16,
+             main = expression(lambda~"= 1"))+
+  layer(panel.lines(ksmooth(da$x, da$y, bandwidth = 1, 
+                            kernel = "normal"),
+                    lwd = 2,
+                    col = 3))
+
+p2 <- xyplot(y ~ x, data = da, type = c("p", "g"),
+             col = "turquoise", 
+             xlab = "X - Tempo de Estudo",
+             ylab = "",
+             pch = 16,
+             main = expression(lambda~"= 4"))+
+  layer(panel.lines(ksmooth(da$x, da$y, bandwidth = 4, 
+                            kernel = "normal"),
+                    lwd = 2,
+                    col = 2))
+
+p3 <- xyplot(y ~ x, data = da, type = c("p", "g"),
+       col = "turquoise", 
+       pch = 16,
+       ylab = "",
+       xlab = "",
+       main = expression(lambda~"= 7"))+
+  layer(panel.lines(ksmooth(da$x, da$y, bandwidth = 7, 
+                            kernel = "normal"),
+                    lwd = 2,
+                    col = 3))
+
+print(p1, position = c(0, 0, 1/3, 1), more = TRUE)
+print(p2, position = c(1/3, 0, 2/3, 1), more = TRUE)
+print(p3, position = c(2/3, 0, 1, 1))
+```
+
+  - Podemos notar que, para os dados considerados, com um $\lambda$ igual
+  a 1 temos pouca suavização, o que é melhorado com o aumento para 4. 
+  Mesmo assim, uma suavização com este $\lambda$ não parece adequada. Com
+  $\lambda = 7$ já temos algo mais razoável, ou seja, uma suavização
+  que pode ser tomada como boa. 
+  
+  
+## Modelo Aditivo Generalizado
+  
+  - A utilização de um Modelo Aditivo Generalizado envolve basicamente
+  o ajuste de um modelo linear com funções não lineares nas covariáveis,
+  mantendo a aditividade. Dessa forma, relações não lineares entre as
+  variáveis explicativas e a variável resposta podem ser capturadas. A
+  forma geral de um modelo aditivo generalizado é:
+  $$y_i = \beta_0 + \sum_{j = 1}^{p} f_{j}(x_{ij}) + \epsilon_i$$
+  
+  - O ajuste de uma função não linear nas covariáveis pode potencializar
+  significativamente a acurácia das predições. Além disso, o fato de o
+  modelo continuar sendo aditivo garante a interpretação de variáveis
+  separadamente, ou seja, avaliar o efeito de uma enquanto as outras 
+  mantêm-se constantes. Exemplos de ajustes são:
+  
+  
+```{r, fig.width=8.5, fig.height=5, out.extra = 'style = "margin:0 -200px"', fig.cap = "Figura 7: Modelos Lineares Generalizados: variações não lineares na resposta"}
+#------ Instalação do pacote através do GitHub
+# library(devtools)
+# install_github("cran/mgcv")
+#------
+
+mg.gam1 <- mgcv::gam(y ~ log(x), data = da)
+aic[4] <- AIC(mg.gam1)
+
+mg.gam2 <- mgcv::gam(y ~ s(x), data = da)
+aic[5] <- AIC(mg.gam2)
+
+p1 <- xyplot(y ~ x, data = da, type = c("p", "g"),
+             col = "turquoise", 
+             pch = 16,
+             ylab = "Y - Renda",
+             xlab = "X - Anos de Estudo",
+             main = paste0("GAM com log em x - AIC = ", round(aic[4], 3)),
+             panel = function(x, y, ...) {
+               panel.xyplot(x, y, ...)
+               
+               le <- mgcv::gam(da$y ~ log(da$x))
+               p <- data.frame(predict(le))
+               pp <- sort(p$predict.le., decreasing = FALSE)
+               x <- sort(da$x)
+               llines(x, pp, col = 3, lwd = 3)
+             })
+
+p2 <- xyplot(y ~ x, data = da, type = c("p", "g"),
+             col = "turquoise", 
+             pch = 16,
+             ylab = "Y - Renda",
+             xlab = "X - Anos de Estudo",
+             main = paste0("GAM com spline em x - AIC = ", round(aic[5],
+                                                                 3)),
+             
+             panel = function(x, y, ...) {
+               panel.xyplot(x, y, ...)
+               
+               le <- mgcv::gam(da$y ~ s(da$x))
+               p <- data.frame(predict(le))
+               pp <- sort(p$predict.le., decreasing = FALSE)
+               x <- sort(da$x)
+               llines(x, pp, col = 2, lwd = 3)
+             })
+
+print(p1, position = c(0, 0, 0.5, 1), more = TRUE)
+print(p2, position = c(0.5, 0, 1, 1), more = TRUE)
+```
+
+  - Foram ajustados dois modelos diferentes: um com *log* na covariável
+  x e um com *spline* cúbico. Observamos que o valor do AIC para o 
+  modelo com spline é o mais baixo obtido até agora, mas em 
+  contrapartida temos um curva que "corre atrás" dos dados. O modelo
+  com o *log* não é muito melhor que um modelo linear simples. 
+  
+## Resultados e Conclusão
+
+  - As técnicas utilizadas aqui não são diretamente comparáveis em medida
+  de verossimilhança pois não são todas paramétricas. Todavia, uma 
+  forma de fazer a comparação é visualmente, avaliando conjuntamente
+  as curvas produzidas por cada ajuste. 
+  
+```{r, fig.cap="Figura 8: Comparação de ajustes por diferentes técnicas", fig.width=7.5, fig.height=6, out.extra = 'style = "margin:0 -200px"'}
+
+xyplot(y ~ x, data = da, type = c("p", "g"),
+       col = "turquoise", 
+       pch = 16,
+       ylab = "Y - Renda",
+       xlab = "X - Tempo de estudo",      
+       main = "Curvas Ajustadas",
+
+       key=list(space="bottom",
+                lines= list(col = c(2, 3, "yellow", "violetred",
+                                    "orange", 4),
+                            lwd=6),
+                text=list(c("Reg. Linear",
+                            "Reg. Por Partes",
+                            expression("Suav. por Kernel - "~lambda~"= 7"),
+                            "Suav. por Splines - 5 graus de liberdade",
+                            "GAM com log em x",
+                            "GAM com spline em x")), 
+                columns = 2
+       ),
+       panel = function(x, y, ...) {
+         
+         panel.xyplot(x, y, ...)
+         panel.abline(lm(y~x), col = 2, lwd = 3)
+         
+    le <- lm(y ~ x, da,
+             subset = x <= 50)
+    llines(da$x[da$x <= 50],
+           predict(le), col = 3, lwd = 3)
+    ld <- lm(y ~ x + p, da,
+             subset = x > 50)
+    llines(da$x[da$x > 50],
+           predict(ld), col = 3, lwd = 3)
+    #-------
+    gam1 <- mgcv::gam(da$y ~ s(da$x))
+    p <- data.frame(predict(gam1))
+    pp <- sort(p$predict.gam1, decreasing = FALSE)
+    x <- sort(da$x)
+    llines(x, pp, col = "orange", lwd = 3)
+    
+    #-------
+    gam2 <- mgcv::gam(da$y ~ log(da$x))
+    p <- data.frame(predict(gam2))
+    pp <- sort(p$predict.gam2, decreasing = FALSE)
+    x <- sort(da$x)
+    llines(x, pp, col = 4, lwd = 3)
+    
+  })+
+  layer(panel.lines(ksmooth(da$x, da$y, bandwidth = 7, 
+                            kernel = "normal"),
+                    lwd = 3,
+                    col = "yellow"))+
+    layer(panel.lines(smooth.spline(da$x, da$y, df = 5),
+                    lwd = 3,
+                    col = "violetred"))
+```
+
+  - Para a modelagem paramétrica, já haviamos observada que a regressão
+  por partes produz resultados mais satisfatórios que a regressão linear
+  simples. Os modelos aditivos generalizados também produzem resultados
+  melhores que a regressão linear, sendo que o modelo com *spline* foi o 
+  melhor entre os 4. Entretanto, como citado antes, é preciso pensar
+  que esse modelo, ao buscar muito os dados, pode não ser muito bom 
+  para a predição, porque ele pode ter uma taxa de erro alta com
+  observações diferentes das utilizadas no ajuste. 
+  
+  - Nas suavizações, não nota-se muitas diferenças. No começo das
+  curvas as suavizações parecem divergir um pouco, mas ao fim elas estão
+  quase sobrepostas. A suavização por *Kernel*, neste caso, parece 
+  mais flexível, mas isso também depende do parâmetro de suavização 
+  escolhido. Ambas parecem se ajustar bem aos dados. 
+  
+## Referências Bibliográficas
+  - **JAMES, G., WITTEN, D., HASTIE, T. AND TIBSHIRANI, R.**
+  <p> An introduction to statistical learning
+  
+  - **FARAWAY, J.J. ** - Extending the linear model with R: generalized linear, mixed effects and nonparametric regression models
+  
+  - **PAULA, G.A.** - Modelos de Regressão com Apoio Computacional

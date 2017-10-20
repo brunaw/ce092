@@ -1,0 +1,385 @@
+---
+title: "Estudo de artigo: Confiabilidade e Precisão na Estimação de Médias"
+subtitle: Julio M. Singer, Carmen Diva Saldiva de André e Clósvis de Araújo Peres. 
+author: "Bruna Wundervald"
+output:
+  rmarkdown::html_vignette:
+    fig_width: 5
+    fig_height: 3.5
+    fig_cap: TRUE
+    toc: yes
+    css: style.css
+header-includes:
+  - \usepackage{mathtools}
+---
+<style type="text/css">
+#TOC {
+  margin: 0 130px;
+  width: 425px;
+}
+</style>
+
+```{r setup, include = FALSE}
+library(knitr)
+opts_chunk$set(
+    dpi = 100,
+    fig.align = "center",
+    comment = NA,
+    message = FALSE,
+    warning = FALSE,
+    error = FALSE)
+```
+
+# Introdução
+
+Problemas compostos por medidas repetidas em um mesmo indivíduo podem
+ser avaliados por meio de um modelo de análise de variância, como:
+
+$$ y_{ij} = \mu + a_i + e_{ij} $$
+Onde $a_i \sim N(0, \sigma^2_e)$ e $e_{ij} \sim N(0, \sigma^2_a)$. As
+variâncias em questão são usadas na equação do coeficiente de 
+correlação intraclasse, ou seja: 
+
+$$
+\rho = \frac{\sigma^2_a}{(\sigma^2_a + \sigma^2_e)}
+$$
+
+Assim, observa-se que:
+
+ - Quanto menor a variância amostral intra-indivíduos (mais 
+ homogeneidade), $\sigma^2_e$, em relação à variância amostra
+ inter-indivíduos, $\sigma^2_a$, mais próximo de 1 é o valor de $\rho$. 
+ - Analogamente, o valor de $\rho$ cai quando $\sigma^2_e$ aumenta 
+ em relação a $\sigma^2_a$. 
+ 
+
+```{r, fig.align='center', fig.cap="Figura 1: Comportamento da correlação intraclasse variando $\\sigma^2_a$ e $\\sigma^2_e$", fig.width=6.5}
+library(ggplot2)
+library(gridExtra)
+library(tidyverse)
+library(grid)
+library(gtable)
+
+rho <- function(s.a, s.e){
+  r <- s.a/(s.a + s.e)
+}
+rho.a <- Vectorize(rho, "s.a")
+rho.e <- Vectorize(rho, "s.e")
+
+r.a <- seq(0.1, 250, l = 1000) %>% rho.e(s.e = 5)
+r.e <- seq(50, 0.1, l = 1000) %>% rho.a(s.a = 5)
+
+p1 <- data.frame(s = seq(0.1, 250, l = 1000), r.a = r.a) %>%
+  ggplot(aes(x = s, y = r.a)) + 
+  geom_line( colour = "green2", size = 2) + 
+  xlab(expression(sigma[a]^2)) +
+  ylab(expression(rho)) +
+  geom_hline(aes(yintercept = 0.75), 
+             linetype = "dashed", size = 1.5, color = "ivory4") +
+  geom_hline(aes(yintercept = 0.4), 
+             linetype = "dashed", size = 1.5, color = "ivory4") +
+    annotate("text", x = 220, y = 0.80, 
+           label = "Alta",
+           parse = TRUE, size = 5) +
+    annotate("text", x = 220, y = 0.45, 
+           label = "Baixa",
+           parse = TRUE, size = 5) +
+  scale_y_continuous(limits = c(0, 1))
+
+
+p2 <- data.frame(s = seq(50, 0.1, l = 1000), r.e = r.e) %>%
+  ggplot(aes(x = s, y = r.e)) + 
+  geom_line( colour = "tomato", size = 2) +
+  xlab(expression(sigma[e]^2)) +
+  geom_hline(aes(yintercept = 0.75), 
+             linetype = "dashed", size = 1.5, color = "ivory4") +
+  geom_hline(aes(yintercept = 0.4), 
+             linetype = "dashed", size = 1.5, color = "ivory4") + 
+  annotate("text", x = 13, y = 0.80, 
+           label = "Confiabilidade",
+           parse = TRUE, size = 5) +
+    annotate("text", x = 13, y = 0.45, 
+           label = "Confiabilidade",
+           parse = TRUE, size = 5) +
+    scale_y_continuous(limits = c(0, 1))
+
+gl <- lapply(list(p1, p2), ggplotGrob)
+
+widths <- do.call(unit.pmax, lapply(gl, "[[", "widths"))
+heights <- do.call(unit.pmax, lapply(gl, "[[", "heights"))
+lg <- lapply(gl, function(g) {g$widths <- widths; g$heights <- heights; g})
+gt = cbind(lg[[1]], lg[[2]][, -(1:3)], size = "first")
+
+gt$widths[5] = unit(0, "lines")
+grid.newpage()
+grid.draw(gt)
+```
+
+Além disso, a média de $m > 1$ observações é um estimador 
+melhor/mais confiável da média populacional do que uma única observação.
+Assim, o modelo: 
+
+$$ \bar y_{i} = \mu + a_i + \bar e_{i} $$
+Tem coeficiente de correlação uintraclasse (confiabilidade média de
+m réplicas) dado por: 
+             
+$$
+\rho = \frac{\sigma^2_a}{(\sigma^2_a + \sigma^2_e/m)}
+$$
+E temos que a **confiabilidade média de m réplicas depende de m**, pois:
+ 
+$$
+\rho_m = \frac{m \rho}{1 + (m-1)\rho}
+$$
+
+
+```{r, fig.cap="Figura 2: Comportamento de $\\rho_m$ com m variando e $\\rho$ fixo", fig.width=4.5, fig.align='center'}
+rho.m <- function(m, rho){
+  r <- m*rho/(1 + (m-1)*rho)
+}
+rho.m <- Vectorize(rho.m, "m")
+
+r.m <- 1:100 %>% rho.m(rho = 0.5)
+
+data.frame(s = 1:100, r.m = r.m) %>%
+  ggplot(aes(x = s, y = r.m)) + 
+  geom_line( colour = "turquoise", size = 2) + 
+  xlab(expression(m)) +
+  ylab(expression(rho[m]))  +
+  scale_y_continuous(limits = c(0.45, 1))
+```
+
+Isolando m, temos:
+
+$$
+m = \frac{\rho_m (1 - \rho)}{\rho (1 - \rho_m)}
+$$
+Com isso, o objetivo do trabalho apresentado no artigo é propor um 
+planejamento com o objetivo de estimar $\rho$.
+
+*_________________________________________________________________________________________*
+
+# Precisão *versus* confiabilidade na estimação da média
+
+Sob o primeiro modelo apresentado, a redução do intervalo de confiança
+para $\mu$, usando n medidas (m-plicatas), relativamente à amplitude
+do intervalo baseado em m = 1 é:
+
+$$ 1 - \sqrt{\rho + (1-\rho/m)} \times 100\% $$
+  
+  - A redução será menor com o aumento de $\rho$, para um m fixado. 
+  - Para um $\rho$ fixo, a redução aumenta junto com m. 
+```{r, fig.align='center', fig.cap="Figura 3: Comportamento da redução do IC variando $\\rho$  e m", fig.width=6.5, out.extra='angle=90'}
+
+red <- function(m, rho){
+  red <-  (1 - sqrt(rho + (1-rho)/m)) 
+}
+red.rho <- Vectorize(red, "rho")
+red.m <- Vectorize(red, "m")
+
+red.r <- seq(0, 1, l = 1000) %>% red.rho(m = 5)
+red.mm <- 1:100 %>% red.m(rho = 0.5)
+
+p1 <- data.frame(s = seq(0, 1, l = 1000), r = red.r) %>%
+  ggplot(aes(x = s, y = r)) + 
+  geom_line( colour = "orange", size = 2) + 
+  ylab("Redução da amplitude do IC") +
+  xlab(expression(rho)) 
+
+
+p2 <- data.frame(s = 1:100, r = red.mm) %>%
+  ggplot(aes(x = s, y = r)) + 
+  geom_line( colour = "violet", size = 2) +
+  xlab(expression(m)) 
+
+gl <- lapply(list(p1, p2), ggplotGrob)
+
+widths <- do.call(unit.pmax, lapply(gl, "[[", "widths"))
+heights <- do.call(unit.pmax, lapply(gl, "[[", "heights"))
+lg <- lapply(gl, function(g) {g$widths <- widths; g$heights <- heights; g})
+gt = cbind(lg[[1]], lg[[2]][, -(1:3)], size = "first")
+
+gt$widths[5] = unit(0, "lines")
+grid.newpage()
+grid.draw(gt)
+```
+
+Da equação de $\rho_m$, sabe-se que a confiabilidade média de m
+é a confiabilidade uma observação multiplicada por:
+$$ m/(1 + (m-1) \rho)$$
+
+# Alocação ótima para estimação de $\rho$
+
+  - Quais devem ser o valores de m e n para que a variância de 
+  $\hat \rho$ seja mínima?
+  
+  $$\hat \rho = \frac{QMA - QMR}{QMA + (m-1) QMR}$$
+
+E 
+
+$$ Var(\hat \rho) = \frac{2(1 - \rho)^2 [n + (N - n) \rho]^2}{N(N-n)(n-1)}$$
+
+  - Existe pelo menos um valor de n entre (1, N) que minimiza $\hat \rho$.
+  Em Ching(1995), este valor é determinado como:
+  
+$$ n_0 = \frac{N(N-1)\rho + 2}{(N+1) + (N- 1)\rho}$$
+
+  
+
+
+```{r, fig.align='center', fig.cap="Figura 4: Comportamento de $V(\\hat \\rho)$ variando n", fig.width=6.5}
+hat.rho <- function(rho, n, N){
+  r <-  (2*(1 - rho)^2 * (n + (N - n)  * rho)^2)/(N*(N-n)*(n-1)) 
+}
+hat.rho <- Vectorize(hat.rho, "n")
+
+hr <- 1:250 %>% hat.rho(rho = 0.5, N = 250)
+
+# n0 = (N(N-1) \rho + 2)/((N+1) + (N-1) \rho)
+n0 <- (250 *  (250-1) * 0.5 + 2)/((250+1) + (250-1) * 0.5)
+
+data.frame(s = 1:250, r = hr) %>%
+  ggplot(aes(x = s, y = r)) + 
+  geom_line( colour = "maroon", size = 2) + 
+  ylab(expression("Variância de"~hat(rho))) +
+  xlab("n") +
+  geom_hline(aes(yintercept = min(hr)),
+             linetype = "dashed", size = 1.5, color = "ivory4") +
+  geom_vline(aes(xintercept = which.min(hr)),
+             linetype = "dashed", size = 1.5, color = "ivory4") + 
+  annotate("text", y = min(hr) + 0.02 , x = 145, 
+           label = paste("argmin(V(hat(rho))) == ", round(min(hr), 4)),
+           parse = TRUE, size = 7) +
+    geom_point(aes(x = n0, y = 0.004), 
+             size = 4, colour = "yellow") + 
+    annotate("text", y = 0.018 , x = n0 - 15, 
+           label = paste0("n[0]"),
+           parse = TRUE, size = 7)
+```
+
+Percebe-se que os valores de m e n dependem de $\rho$, a ser estimado. 
+A seguir os autores mostram que é possível obtê-los sem considerar
+a correlação. Substituindo n por $n_0$ em $\hat \rho$, obtem-se
+a variância do planejamento ótimo como:
+
+$$ Var(\hat \rho | n = n_0) = \frac{8(1 - \rho)^2 [(N - 1) \rho + 1]}{(N-1)^2}$$
+Que tem máximo quando:
+$$ \rho = \frac{N - 3}{3(N - 1)} $$ 
+
+
+```{r, fig.align='center', fig.cap="Figura 5: Comportamento de $V(\\hat \\rho | n = n_0)$ variando $\\rho$", fig.width=6.5}
+v.rho <- function(rho, N){
+  r <-  (8*((1 - rho)^2) * (N - 1)* rho + 1)/((N-1)^2) 
+}
+v.rho <- Vectorize(v.rho, "rho")
+
+vr <- seq(0, 1, l = 1000) %>% v.rho(N = 50)
+
+# rho = (N - 3)*(3(N - 1)
+rho  <-  (50 - 3)/(3*(50 - 1))
+
+data.frame(s = seq(0, 1, l = 1000), r = vr) %>%
+  ggplot(aes(x = s, y = r)) + 
+  geom_line( colour = "red3", size = 2) + 
+  ylab(expression("Variância de"~hat(rho))) +
+  xlab(expression(rho)) +
+  geom_vline(aes(xintercept = rho),
+             linetype = "dashed", size = 1.5, color = "ivory4") + 
+  annotate("text", y =  0.0225, x = rho, 
+           label = paste("rho == ", round(rho, 2)),
+           parse = TRUE, size = 7) 
+```
+
+
+Substituindo na equação de $n_0$, obtemos os valores ótimo como sendo:
+
+$$
+\begin{equation}
+\begin{cases}
+    n_0 = (N+3)/4  	\approx  N/4 \\
+    \rho = (N-3)/[3(N-1)] \\
+    m = 4 \\
+    Var(\hat \rho | n = N/4) = \frac{2 (1 - \rho)^2 (1+3 \rho)^2}{3(N-4)}
+\end{cases}
+\end{equation} 
+$$
+
+
+# Estudo da confiabilidade das medidas de Dióxido de Nitrogênio
+
+  - Neste estudo, foi adotado o planejamento quase ótimo para 
+  estimar $\rho$. 
+
+```{r, fig.align='center', fig.cap="Figura 5: Gráfico de dispersão dos dados", fig.width=6.5}
+da <- read.table("da.txt", header = TRUE)
+str(da)
+
+# Resumo dos dados
+tapply(da$Concentra, da$Local, summary)
+
+#--------------------------------------------
+# Gráfico descritivo
+#--------------------------------------------
+da %>%
+  ggplot(aes(x = Concentra, y = Local)) + 
+  geom_point(aes(colour = factor(Local)), size = 3) + 
+  scale_colour_manual(name = "Local", 
+                      values = c("#E41A1C", "#FF7F00", "#FFFF33",
+                                "#4DAF4A", "pink")) +
+  xlab("Concentração")
+#--------------------------------------------
+da.new <- plyr::ddply(da, "Local", transform, m = mean(Concentra))
+# SQResiduos
+QMR <- sum((da.new$Concentra - da.new$m)^2) * (20 - 5)^(-1)
+
+# SQA
+ydd <- sum(da.new$Concentra)/20
+QMA <- sum(4 * (da.new$m - ydd)^2)/((5 - 1)*4)
+
+# Estimativa do coeficiente de correlação intraclasse
+(rho.est <- (QMA - QMR)/(QMA + (4 -1) * QMR))
+
+# V(rho)
+(v.rho <-  (2*(1 - rho.est)^2 * (1 + 3*rho.est)^2)/(3*(20-4)))
+
+rho.est.m <- (QMA - QMR)/(QMA + (4/4 -1) * QMR)
+
+# Estimativa de m - confiabilidade = 0.9 
+(m <-  (0.9 * (1 - rho.est))/(rho.est * (1 - 0.9)))
+
+# Redução da amplitude
+(red <- 1 - (sqrt(rho.est + (1 - rho.est)/2)))
+
+# ----- Análise sem o local 2---------------------------------------------
+da2 <- da %>% filter(Local != 2)
+
+da.new2 <- plyr::ddply(da2, "Local", transform, m = mean(Concentra))
+
+# SQResiduos
+QMR <- sum((da.new2$Concentra - da.new2$m)^2) * (16 - 4)^(-1)
+
+# SQA
+ydd <- sum(da.new2$Concentra)/16
+QMA <- sum(4 * (da.new2$m - ydd)^2)/((4 - 1)*4)
+
+# Estimativa do coeficiente de correlação intraclasse
+(rho.est <- (QMA - QMR)/(QMA + (4 -1) * QMR))
+
+# Estimativa de m - confiabilidade = 0.9 
+(m <-  (0.9 * (1 - rho.est))/(rho.est * (1 - 0.9)))
+```
+
+No caso descrito como exemplo no artigo, encontra-se: $\hat \rho = 0.82$,
+$Var(\hat \rho) = 0.016$ e m ótimo como 2, para uma confiabilidade de 90%.
+Ou seja, se o número disponível de filtros for 20, devem ser selecionados 10 locais de coleta, sendo colocados 2 filtros em cada. Neste caso, 
+obtém-se também que a  redução do IC para a média é 4.6%. Ao
+desconsiderarmos o local 2,  que tem valores bem menores que os outros, entretanto, temos $\hat \rho = 0.55$ e m ótimo valendo 8.  
+
+# Considerações finais
+
+Conclue-se que o aumento na confiabilidade de uma resposta pode ser
+demonstrado também através do aumento da precisão da estimativa para
+$\mu$. Além disso, o conhecimento de $\rho$ é indispensável para 
+quantificar o ganho obtido. 
+
+

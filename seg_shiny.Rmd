@@ -1,0 +1,51 @@
+---
+title: ""
+runtime: shiny
+output: html_document
+---
+
+```{r, echo = FALSE}
+da <- read.csv("df02.txt", 
+               sep = "\t")
+
+library(shiny)
+bootstrapPage(div(style="display:inline-block",
+                  sliderInput("bins", "Breakpoint 1", min = min(da$x),
+                              max = max(da$x), value = 1,
+                              step = 0.05)),
+              div(style="display:inline-block",
+                  sliderInput("bins2", "Breakpoint 2", min = min(da$x),
+                              max = max(da$x), value = 1,
+                              step = 0.05)))
+
+output$chart <- renderPlot({
+  da$v <- with(da,
+               ifelse(x <= input$bins, 0, x - input$bins))
+  da$p <- with(da,
+               ifelse(x <= input$bins2, 0, x - input$bins2))
+  m0 <- lm(Y1 ~ x + v, da)
+  m1 <- lm(Y2 ~ x + p, da)
+  
+  da$pred <- predict(m0)
+  da$pred2 <- predict(m1)
+  aic1 <- AIC(m0)
+  aic2 <- AIC(m1)
+  #-----------
+  par(mfrow = c(1, 2))
+  plot(Y1 ~ x, data = da, pch = 16, main = paste0("AIC = ", 
+                                                  round(aic1, 3)))
+  da <- da[order(da$x),]
+  with(subset(da, x < input$bins), lines(x, pred, col = "2", lwd = 2))
+  with(subset(da, x >= input$bins), lines(x, pred, col = "2", lwd = 2))
+  
+  plot(Y2 ~ x, data = da, pch = 16, main = paste0("AIC = ", 
+                                                  round(aic2, 3)))
+  da <- da[order(da$x),]
+  with(subset(da, x < input$bins2), lines(x, pred2, col = "2", 
+                                           lwd = 2))
+  with(subset(da, x >= input$bins2), lines(x, pred2, col = "2",
+                                            lwd = 2))
+})
+plotOutput("chart")
+```
+
