@@ -1,7 +1,6 @@
 ---
 title: "Estudo de artigo: Confiabilidade e Precisão na Estimação de Médias"
 subtitle: Julio M. Singer, Carmen Diva Saldiva de André e Clósvis de Araújo Peres. 
-author: "Bruna Wundervald"
 output:
   rmarkdown::html_vignette:
     fig_width: 5
@@ -12,12 +11,28 @@ output:
 header-includes:
   - \usepackage{mathtools}
 ---
+
+
 <style type="text/css">
 #TOC {
   margin: 0 130px;
   width: 425px;
 }
 </style>
+</style>
+<div class="outer">
+<img src="./logo1.png" width="150px" display="block">
+</div>
+<b>
+<center>
+<a href="https://brunaw.github.io/"> Bruna Wundervald </a><br/>
+<code>brunadaviesw at gmail.com</code><br/>
+Departamento de Estatística - UFPR
+</center>
+</b>
+</div>
+</div>
+
 
 ```{r setup, include = FALSE}
 library(knitr)
