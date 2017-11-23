@@ -1,0 +1,13 @@
+name: seg_shiny
+title:
+username:
+account: brunaw
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 216179
+bundleId: 1044733
+url: https://brunaw.shinyapps.io/seg_shiny/
+when: 1508958808.64013
+asMultiple: TRUE
+asStatic: FALSE
+ignoredFiles: artigo.html|artigo.Rmd|df02.txt|logo1.png|pw4.html|pw4.Rmd|README.md|regpartes.jpg|seg_shiny.Rmd|style.css|t1 - Bruna.html|t1.Rmd|t1_shiny.Rmd|teste.html|teste.Rmd|PJ files/reg partes.R|PJ files/segmentada.R

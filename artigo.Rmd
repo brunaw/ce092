@@ -390,6 +390,8 @@ Ou seja, se o número disponível de filtros for 20, devem ser selecionados 10 l
 obtém-se também que a  redução do IC para a média é 4.6%. Ao
 desconsiderarmos o local 2,  que tem valores bem menores que os outros, entretanto, temos $\hat \rho = 0.55$ e m ótimo valendo 8.  
 
+<iframe src="https://brunaw.shinyapps.io/ce092/" width=100% height =600 frameborder="0" scrolling="no" marginheight="0" marginwidth="0"> </iframe>
+
 # Considerações finais
 
 Conclue-se que o aumento na confiabilidade de uma resposta pode ser

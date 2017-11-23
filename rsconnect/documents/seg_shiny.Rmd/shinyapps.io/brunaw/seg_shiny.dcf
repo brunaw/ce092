@@ -5,9 +5,9 @@ account: brunaw
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 216179
-bundleId: 986283
+bundleId: 1044744
 url: https://brunaw.shinyapps.io/seg_shiny/
-when: 1505746221.22792
+when: 1508959053.46722
 asMultiple: TRUE
 asStatic: FALSE
-ignoredFiles: pw4.Rmd|t1.Rmd|t1_shiny.Rmd
+ignoredFiles: style.css|logo1.png|da.txt|artigo.Rmd|pw4.Rmd|t1.Rmd|t1_shiny.Rmd|teste.Rmd

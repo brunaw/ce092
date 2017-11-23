@@ -1,0 +1,711 @@
+---
+title: "Inferência em Modelos Heterocedásticos"
+author: "Alcides Conte Neto & Bruna Wundervald"
+date: "20 de novembro de 2017"
+output:
+  html_document:
+    toc: true
+---
+
+<style>
+@font-face {
+    font-family: "Ubuntu";
+    font-style: normal;
+    font-weight: 300;
+    src: local("Ubuntu Light"), local("Ubuntu-Light"), url("http://themes.googleusercontent.com/static/fonts/ubuntu/v4/WtcvfJHWXKxx4x0kuS1kobO3LdcAZYWl9Si6vvxL-qU.woff") format("woff");
+}
+@font-face {
+    font-family: "Ubuntu";
+    font-style: normal;
+    font-weight: 400;
+    src: local("Ubuntu"), url("http://themes.googleusercontent.com/static/fonts/ubuntu/v4/CGXpU_uR_FUfdeyCjAWgZ-vvDin1pK8aKteLpeZ5c0A.woff") format("woff");
+}
+@font-face {
+    font-family: "Ubuntu";
+    font-style: normal;
+    font-weight: 500;
+    src: local("Ubuntu Medium"), local("Ubuntu-Medium"), url("http://themes.googleusercontent.com/static/fonts/ubuntu/v4/gMhvhm-nVj1086DvGgmzB7O3LdcAZYWl9Si6vvxL-qU.woff") format("woff");
+}
+@font-face {
+    font-family: "Ubuntu";
+    font-style: normal;
+    font-weight: 700;
+    src: local("Ubuntu Bold"), local("Ubuntu-Bold"), url("http://themes.googleusercontent.com/static/fonts/ubuntu/v4/nsLtvfQoT-rVwGTHHnkeJrO3LdcAZYWl9Si6vvxL-qU.woff") format("woff");
+}
+@font-face {
+    font-family: "Ubuntu";
+    font-style: italic;
+    font-weight: 300;
+    src: local("Ubuntu Light Italic"), local("Ubuntu-LightItalic"), url("http://themes.googleusercontent.com/static/fonts/ubuntu/v4/DZ_YjBPqZ88vcZCcIXm6VqfTCPadK0KLfdEfFtGWCYw.woff") format("woff");
+}
+
+
+
+html {
+    font-size: 100%;
+}
+html, button, input, select, textarea {
+    font-family: sans-serif;
+}
+
+html, body, button, input, select, textarea {
+    color: #57534A;
+    font-family: "Ubuntu","Myriad Pro","Myriad",sans-serif;
+    font-size: 18px;
+	font-weight: 300;
+}
+
+body{
+    margin: 0 auto;
+    background-color: #FFFFFF;
+}
+
+body, textarea {
+    line-height: 1.4;
+}
+
+
+body:after {
+    clear: both;
+    content: "";
+    display: table;
+}
+
+body {
+    padding-left: 6rem;
+    padding-right: 6rem;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 42rem;
+    display: block;
+}
+
+
+
+h1, h2, h3, dt {
+    color: #423F37;
+    font-weight: 700;
+}
+
+h1 {
+    font-size: 2em;
+    margin: 0.67em 0;
+}
+h2, .article-list .article-title {
+    font-size: 1.5em;
+    margin: 0.83em 0;
+}
+h3, dt {
+    font-size: 1.17em;
+    margin: 1em 0;
+}
+h4 {
+    font-size: 1em;
+    margin: 1.33em 0;
+}
+h5 {
+    font-size: 0.83em;
+    margin: 1.67em 0;
+}
+h6 {
+    font-size: 0.75em;
+    margin: 2.33em 0;
+}
+
+
+a {
+    color: #8DB359;
+    cursor: pointer;
+    outline: 0 none;
+    text-decoration: underline;
+}
+
+a:hover {
+    outline: 0 none;
+    color: #739544;
+}
+
+
+p, pre {
+    margin: 1em 0;
+}
+code, kbd, pre, samp {
+    font-family: monospace,serif;
+    font-size: 1em;
+    margin: 0;
+    padding: 0;
+
+}
+pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+pre {
+    background-color: #F8F5F0;
+    font-size: 0.7rem;
+    overflow-x: auto;
+    padding: 1.3rem;
+    position: relative;
+    white-space: pre;
+    word-wrap: normal;
+}
+pre, code, kbd, samp {
+    margin: 0;
+}
+code, kbd, pre, samp {
+    font-family: monospace,serif;
+}
+
+code {
+    color: #423F37;
+}
+
+
+aside {
+    display: block;
+    float: right;
+    width: 390px;
+}
+
+
+b, strong {
+    font-weight: bold;
+    color: #423F37;
+    font-weight: 700;
+}
+
+blockquote {
+    color: #423F37;
+    font-size: 1.25em;
+    font-weight: 700;
+	margin: 1em 40px;
+}
+
+blockquote {
+    margin-bottom: 2em;
+    margin-top: 2em;
+}
+
+figure {
+	margin-left: -4.5rem;
+    margin-right: -4.5rem;
+    margin-bottom: 2em;
+    margin-top: 2em;
+}
+
+
+hr {
+    -moz-border-bottom-colors: none;
+    -moz-border-left-colors: none;
+    -moz-border-right-colors: none;
+    -moz-border-top-colors: none;
+    border-color: -moz-use-text-color -moz-use-text-color #ECE6DA;
+    border-image: none;
+    border-style: none none solid;
+    border-width: medium medium 1px;
+    margin: 3em 6em;
+}
+
+
+img {
+    max-width: 100%;
+    display: block;
+    border: 0 none;
+}
+
+
+ol > li:before {
+    color: #423F37;
+    content: counter(ol, decimal) ".";
+    counter-increment: ol;
+    font-weight: 700;
+    margin-right: 0.333em;
+    position: absolute;
+    right: 100%;
+}
+
+ul > li:before {
+    background-color: #423F37;
+    border-radius: 14px 14px 14px 14px;
+    content: "";
+    height: 6px;
+    margin-right: 0.333em;
+    margin-top: 0.55em;
+    position: absolute;
+    right: 100%;
+    width: 6px;
+}
+
+ol, ul, dl {
+    margin-left: 2rem;
+    padding: 0;
+}
+ol {
+    counter-reset: ol;
+}
+li + li, dd + dt {
+    margin-top: 0.5em;
+}
+
+ul > li {
+    position: relative;
+}
+
+ol > li {
+    position: relative;
+}
+li {
+    list-style: none outside none;
+}
+
+
+figure > figcaption {
+    margin-top: 0.5em;
+}
+small, dd, figcaption {
+    color: #A19C91;
+    display: block;
+    font-size: 0.8rem;
+    font-style: italic;
+    line-height: 1.2;
+}
+
+
+tbody{display:table-row-group}
+tfoot{display:table-footer-group}
+table{margin-bottom:2em;font-size: 0.8em;padding:0;border-collapse:collapse;-webkit-box-shadow:1px 1px 2px rgba(0,0,0,.35);width:80%;margin:0 auto 2em auto}
+table th,table td{padding:10px 10px 9px;line-height:18px;text-align:left}
+table th{
+padding-top:9px;!important;text-transform:uppercase;vertical-align:middle}
+table td{vertical-align:top;border-top:1px solid #ddd;}
+table tbody th{border-top:1px solid #ddd;vertical-align:top}
+table{border:1px solid #ddd;border-collapse:separate;*border-collapse:collapse;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px}
+table th+th,table td+td,table th+td{border-left:1px solid #ddd}
+table thead tr:first-child th:first-child,table tbody tr:first-child td:first-child{-webkit-border-radius:4px 0 0 0;-moz-border-radius:4px 0 0 0;border-radius:4px 0 0 0}
+table thead tr:first-child th:last-child,table tbody tr:first-child td:last-child{-webkit-border-radius:0 4px 0 0;-moz-border-radius:0 4px 0 0;border-radius:0 4px 0 0}
+table tbody tr:last-child td:first-child{-webkit-border-radius:0 0 0 4px;-moz-border-radius:0 0 0 4px;border-radius:0 0 0 4px}
+table tbody tr:last-child td:last-child{-webkit-border-radius:0 0 4px 0;-moz-border-radius:0 0 4px 0;border-radius:0 0 4px 0}
+tbody tr:nth-child(odd){background-color:rgba(0,0,0,0.03)}
+
+caption{display:table-caption;font-weight:300;font-size:1.3em;text-transform:uppercase;letter-spacing:2px;word-spacing:.2em;background:rgba(0,0,0,.75);color:#EEE;padding:4px;-webkit-border-radius:4px;margin:4px 0;-webkit-box-shadow:2px 2px 2px rgba(0,0,0,.35)}
+
+/* grey out placeholders */
+:-moz-placeholder {
+  color: #bfbfbf;
+}
+::-webkit-input-placeholder {
+  color: #bfbfbf;
+}
+
+
+.article-date {
+    color: #C7C2B8;
+    display: block;
+    font-size: 0.8rem;
+}
+
+div.outer { position: relative; height: 24px; }
+div.outer img { position: absolute; right: 0; bottom: 0; }
+
+.vantagens {
+    color: green;
+    font-size:large;
+}
+
+.desvantagens {
+    color: red;
+    font-size:large;
+}
+
+.exemplo {
+    background: #F8FBFD;
+    box-shadow: 0px 0px 20px #AAABAB;
+    border-radius: 5px;
+}
+
+.exemplo > h3 {
+    padding: 20px 5px 5px 5px;
+    text-align: center;
+}
+
+.exemplo > p {
+    font-size: large;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      fig.align = "center")
+library(lattice)
+library(latticeExtra)
+library(knitr)
+library(gridExtra)
+```
+
+```{r}
+# Funções para obtenção matricial de estimativas
+getBeta <- function(X, y) {
+    return(solve(t(X) %*% X) %*% t(X) %*% y)
+}
+
+getResiduals <- function(X, y, beta) {
+    return(y - X %*% beta)
+}
+
+getVarBeta <- function(X, omega){
+    return(solve(t(X) %*% X) %*% t(X) %*% omega %*% 
+             X %*% solve(t(X) %*% X))
+}
+```
+
+## Introdução
+
+Na presença de heterocedasticidade:
+
+- O estimador de Mínimos Quadrados Ordinários dos coeficientes de 
+regressão permanece não-viesado e consistente.
+
+- O estimador da matriz de covariância por MQO é viesado e
+inconsistente.
+
+### O modelo
+
+O modelo considerado é:
+
+$$y = X\beta + \epsilon$$
+Se os erros ($\epsilon$) são homocedásticos:
+
+$$ \hat{\beta} = (X'X)^{-1}X'y$$
+$$ \hat{Var(\hat{\beta})} = (X'X)^{-1}X'\hat{\Omega} X (X'X)^{-1}$$
+onde $\hat{\Omega} = \hat{\sigma}^2I_n$.
+
+## O estimador de Halbert White
+
+A proposta de White é utilizar:
+
+$$\hat{\Omega} =  \begin{pmatrix}
+  \hat{e_1}^2 & 0 & \cdots & 0 \\
+  0 & \hat{e_2}^2 & \cdots & 0 \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  0 & 0 & \cdots & \hat{e_n}^2
+\end{pmatrix}
+$$
+
+em que $\hat{e} = (I_n - X(X'X)^{-1}X')y$. Ou seja, encontra-se uma
+matriz diagonal formada a partir do vetor contendo os quadrados
+dos resíduos de mínimos quadrados. 
+
+<span class='vantagens'> 
+    Vantagens: 
+</span>
+
+- O estimador é consistente quando os erros são homocedásticos e quando há heterocedasticidade desconhecida.
+
+<span class='desvantagens'> 
+    Desvantagens: 
+</span>
+
+- O estimador pode ser muito viesado em amostras finitas, conduzindo a testes quase-t liberais (tende a rejeitar mais $H_0$).
+
+- Pontos de alta alavancagem tem grande influência sobre o desempenho dos estimadores consistentes e testes associados.
+
+<div class='exemplo'>
+<h3> Exemplo </h3>
+
+```{r}
+set.seed(14112017)
+x <- seq(1, 50, length.out = 1000)
+y <- 10 + 0.027 * x + 
+    rnorm(1000, mean = 0, sd = seq(3, 15, length.out = 1000))
+
+X <- model.matrix(y ~ x)
+hat <- X %*% solve(t(X) %*% X) %*% t(X)
+beta <- getBeta(X, y)
+pred <- X %*% beta
+res <- (y - pred)
+sigma2 <- sum(res^2)/(length(res) - 2)
+
+xyplot(y ~ x,
+       main = "Modelo Heterocedástico",
+       panel = function(x, y) {
+           panel.xyplot(x, y, pch = 20)
+           panel.abline(beta, col = 2)
+       }, key = list(space = "bottom", columns = 1, 
+        text = list(lab = c("Reta regressão")),
+        lines = list(lty = 1, col = 2)))
+
+xyplot(res ~ pred, main = "Resíduos", pch = 20,
+       panel = function(x, y, ...) {
+           panel.xyplot(x, y, ...)
+           panel.abline(h = 0, col = "#424242", lty = 2, lwd = 2)
+       }, xlab = "Preditos", ylab = "Resíduos")
+
+# Estimação da matriz de variância
+(varbeta <- getVarBeta(X, sigma2 * diag(1, 
+                                       nrow = length(res))))
+
+## Estimando a matriz com o método de White:
+omega <- diag(1, nrow = length(res))
+omega[omega == 1] <- res^2
+
+varbetawhite <- getVarBeta(X, omega)
+varbetawhite
+
+qt(0.975, length(res) - 2)
+beta[2]/sqrt(varbeta[2, 2])
+beta[2]/sqrt(varbetawhite[2, 2])
+```
+</div>
+
+## O estimador HC3
+
+A proposta do HC3  é utilizar:
+
+$$\hat{\Omega} =  \begin{pmatrix}
+  \frac{\hat{e_1}^2}{(1 - h_1)^2} & 0 & \cdots & 0 \\
+  0 & \frac{\hat{e_1}^2}{(1 - h_2)^2} & \cdots & 0 \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  0 & 0 & \cdots & \frac{\hat{e_n}^2}{(1 - h_n)^2}
+\end{pmatrix}
+$$
+
+onde $h_i$ é o i-ésimo elemento da "matriz chapéu", $H = X(X'X)^{-1}X'$.
+
+<span class='vantagens'>
+    Vantagens:
+</span>
+
+- Geralmente possui melhor desempenho em pequenas amostras se comparado ao estimador de White.
+
+- O estimador conduz a testes quase-t que não são marcadamente 
+liberais e, consequêntemente, a inferências mais confiáveis.
+
+<span class='desvantagens'>
+    Desvantagens:
+</span>
+
+- É uma __aproximação__ do estimador jackknife considerado por 
+MacKinnon e White.
+
+<div class='exemplo'>
+<h3> Exemplo </h3>
+```{r}
+omega <- diag(1, nrow = length(res))
+omega[omega == 1] <- res^2/(1 - diag(hat))^2
+
+varbetahc3 <- getVarBeta(X, omega)
+varbetahc3
+
+qt(0.975, length(res) - 2)
+beta[2]/sqrt(varbeta[2, 2])
+beta[2]/sqrt(varbetawhite[2, 2])
+beta[2]/sqrt(varbetahc3[2, 2])
+```
+</div>
+
+## O estimador de bootstrap
+
+Se utilizarmos o bootstrap em sua forma mais simples (como proposto
+por Bradley Efron), não consideramos a heterocedasticidade:
+
+<div class='exemplo'>
+<h3> Exemplo 1 </h3>
+```{r}
+set.seed(15112017)
+e.new <- sample(res, length(res), replace = TRUE)
+y.new <- X %*% beta + e.new
+xyplot(y.new ~ x, pch = 20)
+```
+</div>
+
+### Bootstrap ponderado
+
+A equação derivada da proposta por Wu é:
+
+$$y_i^* = X\beta + t_i^* \frac{\hat{e_i}}{(1 - h_i)}$$
+
+em que $$t_i^*$$ é um número gerado aleatoriamente de uma distribuição
+com média 0 e variância 1, levando em consideração a possível 
+não-constância das variâncias dos erros. 
+
+<div class='exemplo'>
+<h3> Exemplo 2 </h3>
+```{r}
+set.seed(16112017)
+tast <- rnorm(length(res))
+y.new <- X %*% beta + tast * (res/(1 - diag(hat)))
+y.new.or <- X %*% beta + tast * (res/sqrt(1 - diag(hat)))
+
+gp1 <- xyplot(y.new ~ x, pch = 20, col = 1)
+gp2 <- xyplot(y.new.or ~ x, col = 3, pch = 20)
+
+grid.arrange(grobs = list(gp1, gp2), ncol = 2)
+```
+
+Os valores gerados pela equação de Wu original e a equação derivada
+são bastante similares. A diferença entre eles pode ser vista no gráfico
+abaixo:
+
+```{r}
+xyplot(y.new - y.new.or ~ 1:length(y.new), 
+       scale = list(y = list(tick.number = 18)))
+```
+
+```{r}
+boot <- replicate(2000, {
+    tast <- rnorm(length(res))
+    y.new <- X %*% beta + tast * (res/(1 - diag(hat)))
+    XA <- model.matrix(y.new ~ x)
+    as.vector(solve(t(XA) %*% XA) %*% t(XA) %*% y.new)
+})
+
+varBoot <- apply(boot, 1, var)
+names(varBoot) <- c("(intercept)", "x")
+varBoot
+
+qt(0.975, length(res) - 2)
+beta[2]/sqrt(varbeta[2, 2])
+beta[2]/sqrt(varbetawhite[2, 2])
+beta[2]/sqrt(varbetahc3[2, 2])
+beta[2]/sqrt(varBoot[2])
+```
+</div>
+
+<span class='vantagens'>
+    Vantagens:
+</span>
+
+- É mais precisa do que aquela obtida
+a partir de sua aproximação assintótica de primeira ordem.
+
+<span class='desvantagens'>
+    Desvantagens:
+</span>
+
+- O custo computacional é alto.
+
+## O estimador HC4
+
+A proposta do HC4  é utilizar:
+
+$$\hat{\Omega} =  \begin{pmatrix}
+  \frac{\hat{e_1}^2}{(1 - h_1)^{\delta_1}} & 0 & \cdots & 0 \\
+  0 & \frac{\hat{e_1}^2}{(1 - h_2)^{\delta_2}} & \cdots & 0 \\
+  \vdots  & \vdots  & \ddots & \vdots  \\
+  0 & 0 & \cdots & \frac{\hat{e_n}^2}{(1 - h_n)^{\delta_n}}
+\end{pmatrix}
+$$
+
+
+$\delta_i = n \frac{h_i}{p}$, em que p, que é o posto da matriz X, 
+dado por $\sum_{j = 1}^{n} h_i$.
+
+<div class='exemplo'>
+<h3> Exemplo </h3>
+```{r}
+omega <- diag(1, nrow = length(res))
+delta <- length(res) * diag(hat) / 2
+omega[omega == 1] <- res^2/(1 - diag(hat))^delta
+
+varbetahc4 <- getVarBeta(X, omega)
+varbetahc4
+
+qt(0.975, length(res) - 2)
+beta[2]/sqrt(varbeta[2, 2])
+beta[2]/sqrt(varbetawhite[2, 2])
+beta[2]/sqrt(varbetahc3[2, 2])
+beta[2]/sqrt(varBoot[2])
+beta[2]/sqrt(varbetahc4[2, 2])
+```
+</div>
+
+ - Aqui, o expoente que controla o grau de desconto para a observação
+$i$ é dado pela razão entre o valor de $h_i$ e a média dos $h_i$.
+
+## Teste quase-t
+
+```{r}
+boot <- replicate(1999, {
+    tast <- rnorm(length(res))
+    y.new <- X %*% c(beta[1], 0) + tast * res/(1 - diag(hat))
+    beta.new <- getBeta(X, y.new)
+    res.new <- getResiduals(X, y.new, beta.new)
+    s2 <- sum(res.new^2)/(length(res.new) - 2)
+    vb <- diag(getVarBeta(X, s2 * diag(1, nrow = length(res.new))))
+    as.vector(beta.new/sqrt(vb))
+})
+
+boot <- cbind(beta/sqrt(diag(varbeta)), boot)
+
+plot(density(boot[2,]), 
+     main = expression("Dist. empírica de " * beta[1]))
+abline(v = boot[2, 1], col = 2, lty = 2)
+
+p.value <- sum(boot[2, ] >= boot[2, 1] | 
+                   boot[2, ] <= -boot[2, 1])/dim(boot)[2]
+p.value
+```
+
+## Bootstrap duplo
+
+```{r}
+boot <- replicate(999, {
+    tast <- rnorm(length(res))
+    y.new <- X %*% c(beta[1], 0) + tast * res/(1 - diag(hat))
+    beta.new <- getBeta(X, y.new)
+    res.new <- getResiduals(X, y.new, beta.new)
+    s2 <- sum(res.new^2)/(length(res.new) - 2)
+    vb <- diag(getVarBeta(X, s2 * diag(1, nrow = length(res.new))))
+    replicate(20, {
+        tast2 <- rnorm(length(res))
+        y.new2 <- X %*% c(beta.new[1], 0) + 
+            tast2 * res.new/(1 - diag(hat))
+        beta.new2 <- getBeta(X, y.new2)
+        res.new2 <- getResiduals(X, y.new2, beta.new2)
+        s22 <- sum(res.new2^2)/(length(res.new2) - 2)
+        vb2 <- diag(getVarBeta(X, s22 * diag(1,
+                                             nrow = length(res.new2))))
+        as.vector(beta.new2/sqrt(vb2))
+    })
+})
+
+bs <- NULL
+kk <- apply(boot, 3, function(x) {
+    bs <<- cbind(bs, x)
+})
+
+bs <- cbind(beta/sqrt(diag(varbeta)), bs)
+
+plot(density(bs[2,]), 
+    main = expression("Dist. empírica de " * beta[1]))
+abline(v = bs[2, 1], col = 2, lty = 2)
+
+p.value <- sum(bs[2, ] >= bs[2, 1] | 
+                   bs[2, ] <= -bs[2, 1])/dim(bs)[2]
+p.value
+```
+
+<span class='vantagens'>
+    Vantagens:
+</span>
+
+- A vantagem da utilização do estimador de bootstrap duplo 
+reside em seu bom desempenho geral. 
+
+<span class='desvantagens'>
+    Desvantagens:
+</span>
+
+- Alto custo computacional. 
+
+# Algumas conclusões
+
+  - O estimador de White conduz a testes liberais: podemos encontrar
+  significância para variáveis que não os são;
+  - O estimador HC3 possui melhor desempenho em pequenas amostras, 
+  semelhante ao estimador de *bootstrap ponderado*;
+  - Porém, ambos conduzem a testes liberais quando há pontos de 
+  alavancagem: usar o HC4, que é substancialmente mais simples
+  do ponto de vista computacional, em comparação ao *bootstrap
+  duplo*. 

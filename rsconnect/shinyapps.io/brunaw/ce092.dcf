@@ -1,0 +1,13 @@
+name: ce092
+title: ce092
+username:
+account: brunaw
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 229141
+bundleId: 1044756
+url: https://brunaw.shinyapps.io/ce092/
+when: 1508959222.58442
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: artigo.html|artigo.Rmd|df02.txt|logo1.png|pw4.html|pw4.Rmd|README.md|regpartes.jpg|seg_shiny.Rmd|style.css|t1 - Bruna.html|t1.Rmd|t1_shiny.Rmd|teste.html|teste.Rmd|PJ files/reg partes.R|PJ files/segmentada.R
