@@ -9,13 +9,13 @@ Direct link to the activities:
 
 + Piecewise Regression
 
-  + [Piecewise Regression](https://brunaw.github.io/Ext/pw.html)
+  + [Piecewise Regression](http://brunaw.com/ce092/piecewise/piecewise.html)
 
-  + [Piecewise and Non-Parametric Regression](https://brunaw.github.io/Ext/t1.html)
+  + [Piecewise and Non-Parametric Regression](http://brunaw.com/ce092/many-models/t1.html)
   
 + Linear Mixed Effects
 
-  + [Paper: Confiabilidade e Precisão na Estimação de Médias](https://brunaw.github.io/Ext/artigo_singer.html)
+  + [Paper: Confiabilidade e Precisão na Estimação de Médias](http://brunaw.com/ce092/paper-confiability/artigo.html)
   
-  + [Paper: Inferência em Modelos Heterocedásticos](https://brunaw.github.io/Ext/het.html)
+  + [Paper: Inferência em Modelos Heterocedásticos](http://brunaw.com/ce092/heteroskedacity/ModelosHeterocedasticos.html)
   
