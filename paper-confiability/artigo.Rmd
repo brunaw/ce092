@@ -25,7 +25,7 @@ header-includes:
 </div>
 <b>
 <center>
-<a href="https://brunaw.github.io/"> Bruna Wundervald </a><br/>
+<a href="https://brunaw.com/"> Bruna Wundervald </a><br/>
 <code>brunadaviesw at gmail.com</code><br/>
 Departamento de Estatística - UFPR
 </center>
